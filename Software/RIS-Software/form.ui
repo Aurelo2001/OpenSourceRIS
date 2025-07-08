@@ -21,7 +21,7 @@
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="RIS_tab">
        <attribute name="title">
@@ -37,8 +37,8 @@
          <rect>
           <x>10</x>
           <y>10</y>
-          <width>135</width>
-          <height>147</height>
+          <width>141</width>
+          <height>111</height>
          </rect>
         </property>
         <property name="frameShape">
@@ -52,29 +52,25 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QGroupBox" name="groupBox">
+          <widget class="QGroupBox" name="QGB_SerielConfig">
            <property name="title">
-            <string>RIS schalten</string>
+            <string>RIS serielle Verbindung</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
-             <widget class="QPushButton" name="PB_on">
+             <widget class="QPushButton" name="PB_connect">
               <property name="text">
-               <string>alle an</string>
+               <string>verbinden</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="PB_off">
-              <property name="text">
-               <string>alle aus</string>
+             <widget class="QPushButton" name="PB_disconnect">
+              <property name="enabled">
+               <bool>false</bool>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="PB_invert">
               <property name="text">
-               <string>alle invertieren</string>
+               <string>trennen</string>
               </property>
              </widget>
             </item>
@@ -94,6 +90,19 @@
         </property>
         <property name="text">
          <string>update RIS</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="PB_reset">
+        <property name="geometry">
+         <rect>
+          <x>190</x>
+          <y>120</y>
+          <width>117</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>RIS Reset</string>
         </property>
        </widget>
       </widget>

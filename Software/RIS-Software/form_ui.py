@@ -44,37 +44,36 @@ class Ui_MainWindow(object):
         self.config_tab.setObjectName(u"config_tab")
         self.frame = QFrame(self.config_tab)
         self.frame.setObjectName(u"frame")
-        self.frame.setGeometry(QRect(10, 10, 135, 147))
+        self.frame.setGeometry(QRect(10, 10, 141, 111))
         self.frame.setFrameShape(QFrame.Shape.StyledPanel)
         self.frame.setFrameShadow(QFrame.Shadow.Raised)
         self.frame.setLineWidth(2)
         self.verticalLayout_2 = QVBoxLayout(self.frame)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.groupBox = QGroupBox(self.frame)
-        self.groupBox.setObjectName(u"groupBox")
-        self.verticalLayout = QVBoxLayout(self.groupBox)
+        self.QGB_SerielConfig = QGroupBox(self.frame)
+        self.QGB_SerielConfig.setObjectName(u"QGB_SerielConfig")
+        self.verticalLayout = QVBoxLayout(self.QGB_SerielConfig)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.PB_on = QPushButton(self.groupBox)
-        self.PB_on.setObjectName(u"PB_on")
+        self.PB_connect = QPushButton(self.QGB_SerielConfig)
+        self.PB_connect.setObjectName(u"PB_connect")
 
-        self.verticalLayout.addWidget(self.PB_on)
+        self.verticalLayout.addWidget(self.PB_connect)
 
-        self.PB_off = QPushButton(self.groupBox)
-        self.PB_off.setObjectName(u"PB_off")
+        self.PB_disconnect = QPushButton(self.QGB_SerielConfig)
+        self.PB_disconnect.setObjectName(u"PB_disconnect")
+        self.PB_disconnect.setEnabled(False)
 
-        self.verticalLayout.addWidget(self.PB_off)
-
-        self.PB_invert = QPushButton(self.groupBox)
-        self.PB_invert.setObjectName(u"PB_invert")
-
-        self.verticalLayout.addWidget(self.PB_invert)
+        self.verticalLayout.addWidget(self.PB_disconnect)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox)
+        self.verticalLayout_2.addWidget(self.QGB_SerielConfig)
 
         self.PB_update_RIS = QPushButton(self.config_tab)
         self.PB_update_RIS.setObjectName(u"PB_update_RIS")
         self.PB_update_RIS.setGeometry(QRect(200, 60, 80, 24))
+        self.PB_reset = QPushButton(self.config_tab)
+        self.PB_reset.setObjectName(u"PB_reset")
+        self.PB_reset.setGeometry(QRect(190, 120, 117, 24))
         self.tabWidget.addTab(self.config_tab, "")
 
         self.horizontalLayout.addWidget(self.tabWidget)
@@ -97,7 +96,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -108,11 +107,11 @@ class Ui_MainWindow(object):
         self.actionSpeichern.setText(QCoreApplication.translate("MainWindow", u"Speichern", None))
         self.action_ffnen.setText(QCoreApplication.translate("MainWindow", u"\u00d6ffnen", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.RIS_tab), QCoreApplication.translate("MainWindow", u"RIS", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"RIS schalten", None))
-        self.PB_on.setText(QCoreApplication.translate("MainWindow", u"alle an", None))
-        self.PB_off.setText(QCoreApplication.translate("MainWindow", u"alle aus", None))
-        self.PB_invert.setText(QCoreApplication.translate("MainWindow", u"alle invertieren", None))
+        self.QGB_SerielConfig.setTitle(QCoreApplication.translate("MainWindow", u"RIS serielle Verbindung", None))
+        self.PB_connect.setText(QCoreApplication.translate("MainWindow", u"verbinden", None))
+        self.PB_disconnect.setText(QCoreApplication.translate("MainWindow", u"trennen", None))
         self.PB_update_RIS.setText(QCoreApplication.translate("MainWindow", u"update RIS", None))
+        self.PB_reset.setText(QCoreApplication.translate("MainWindow", u"RIS Reset", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.config_tab), QCoreApplication.translate("MainWindow", u"Konfiguration", None))
         self.menuDatei.setTitle(QCoreApplication.translate("MainWindow", u"Datei", None))
     # retranslateUi
