@@ -1,17 +1,7 @@
-# -*- coding: utf-8 -*-
-
-################################################################################
-## Form generated from reading UI file 'form.ui'
-##
-## Created by: Qt User Interface Compiler version 6.9.1
-##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
-
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt,
-    Signal)     # added imports
+    Signal)
 from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
@@ -20,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QGroupBox, QHBoxLayout, QLabel, QLayout,
     QPushButton, QSizePolicy, QSpacerItem, QTextEdit,
     QVBoxLayout, QWidget,
-    QStyleOptionComboBox, QStyle)   # added imports
+    QStyleOptionComboBox, QStyle)
 
 class RIScontroller_ui(object):
     def setupUi(self, RIScontroller):
@@ -136,7 +126,7 @@ class RIScontroller_ui(object):
         self.retranslateUi(RIScontroller)
 
         QMetaObject.connectSlotsByName(RIScontroller)
-    # setupUi
+
 
     def retranslateUi(self, RIScontroller):
         RIScontroller.setWindowTitle(QCoreApplication.translate("RIScontroller", u"RIScontroller", None))
@@ -151,15 +141,15 @@ class RIScontroller_ui(object):
         self.CB_port.setItemText(0, QCoreApplication.translate("RIScontroller", u"DEMO", None))
 
         self.CB_Debug.setText(QCoreApplication.translate("RIScontroller", u"Debugmode:", None))
-    # retranslateUi
+
 
 
 class PortComboBox(QComboBox):
-    popupAboutToBeShown = Signal()  # Benutzerdefiniertes Signal
+    popupAboutToBeShown = Signal()  # custom Signal
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
     def showPopup(self):
-        self.popupAboutToBeShown.emit()  # Signal senden, bevor Popup gezeigt wird
+        self.popupAboutToBeShown.emit()  # send custom signal before pop-up menu is shown
         super().showPopup()

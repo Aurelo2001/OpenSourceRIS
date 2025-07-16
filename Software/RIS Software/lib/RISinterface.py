@@ -1,5 +1,3 @@
-
-
 from com_sim import RISSimulatorSerial
 import serial
 import serial.tools.list_ports
@@ -23,7 +21,6 @@ class RISinterface:
             return (True, f"COM port set to: {port}")
         else:
             return (True, f"DEMO mode activated, no COM port found.")
-
 
 
     def get_available_ports(self) -> tuple[bool, list]:
@@ -93,6 +90,7 @@ class RISinterface:
             return (True, rx_msg[3:-1])
         else:
             return (False, "Error: read Pattern failed!")
+
 
     def get_extVoltage(self) -> tuple[bool, str]:
         self.ser.write("?vext".encode())

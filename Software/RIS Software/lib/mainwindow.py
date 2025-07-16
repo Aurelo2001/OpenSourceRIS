@@ -15,11 +15,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        # Wir nutzen ein “inneres” QMainWindow, um die Dock-Optionen getrennt setzen zu können
+        # initialize QMainWindow
         self.centre = QMainWindow(self)
         self.centre.setWindowFlags(QtCore.Qt.Widget)
 
-        # Erlaube animierte und tab-bare Docks
+        # configure options of QMainWindow's Docks
         self.centre.setDockOptions(
             QMainWindow.AnimatedDocks |
             QMainWindow.AllowTabbedDocks
@@ -27,36 +27,36 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.centre)
 
-        # Erstelle vier Dock-Widgets
+        # add a QDockWidget for each Widget
         self.dock_toggletable = QDockWidget('RIS', self.centre)
         self.dock_ris_com = QDockWidget('Kommunication', self.centre)
         self.dock_ris_sim    = QDockWidget('Simulation',      self.centre)
 
-        # initialise Widgets for the DockWidgets
+        # initialise Widgets for the QDockWidgets
         self.ris_controller = RIScontroller()
         self.toggletable = ToggleTable(16,16,self.ris_controller.interface.set_pattern)
         # TODO self.ris_siumulator = RISsimulator()
 
-        # configure table tab
+        # configure table dock
         self.dock_toggletable.setWidget(self.toggletable)
         self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_toggletable)
 
-        # configure communication tab
+        # configure communication dock
         self.dock_ris_com.setWidget(self.ris_controller)
         self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_ris_com)
         
-        # configure simulation tab
-        self.dock_ris_sim.setWidget(QLabel("not jet implemented",alignment=QtCore.Qt.AlignCenter))
+        # configure simulation dock
+        self.dock_ris_sim.setWidget(QLabel("not jet implemented",alignment=QtCore.Qt.AlignCenter))  # TODO: replace QLable witch self.ris_siumulator
         self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_ris_sim)
 
-        # Tabs stapeln:
+        # stack all docks in MainWindow
         self.centre.tabifyDockWidget(self.dock_toggletable, self.dock_ris_com)
         self.centre.tabifyDockWidget(self.dock_ris_com, self.dock_ris_sim)
 
-        # Das letzte Dock-Tab ("Right") an den Anfang heben
+        # set shown dock when first opend
         self.dock_ris_com.raise_()
 
-        # Datei-Menü mit "Quit"
+        # add menu with "Quit"
         self.menuBar().addMenu('File').addAction('Quit', self.close)
 
         # init statusbar

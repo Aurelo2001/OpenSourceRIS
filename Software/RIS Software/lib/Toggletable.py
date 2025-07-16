@@ -24,13 +24,14 @@ class ToggleTable(QTableWidget):
         self.installEventFilter(self)
         self.RIS_controler_update_func = RIS_controler_update_func
 
+
     def init_table(self):
         for row in range(self.rowCount()):
             for col in range(self.columnCount()):
                 item = QTableWidgetItem()
-                # Unsichtbare Checkbox (als interner Status)
+                # create an invisible checkbox that acts as a button with an internal status
                 item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                item.setData(Qt.UserRole, False)  # unser eigener Status: False = Aus
+                item.setData(Qt.UserRole, False)  # custom status: False = OFF
                 item.setBackground(QColor("lightgray"))
                 item.setText(str(row*(col+1)+col+1))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -39,18 +40,18 @@ class ToggleTable(QTableWidget):
     def setStatusBarObject(self, StatusBar):
         self.statusbar = StatusBar
 
+
 ###############################################################################
 ##### state change functions ##################################################
 ###############################################################################
-
     # set state of all selected items to specific state or toggle each
     def set_selected_state(self, state:bool=None):
-
         for item in self.selectedItems():
             current_state = item.data(Qt.UserRole)
             new_state = not current_state
 
-            if state is not None:   # toggle current state or set specific state
+            # toggle current state or set specific state
+            if state is not None:   
                 new_state = state
             if new_state:
                 item.setBackground(QColor("green"))
@@ -60,6 +61,7 @@ class ToggleTable(QTableWidget):
             item.setData(Qt.UserRole, new_state)
             self.clearSelection()
         self.update_ris()
+
 
     def update_ris(self):
         state_matrix = [[int(self.item(row,col).data(Qt.UserRole)) for col in range(self.columnCount())] for row in range(self.rowCount())]
@@ -87,14 +89,11 @@ class ToggleTable(QTableWidget):
             self.set_selected_state()
 
         if event.type() == QEvent.ContextMenu:
-
             txt_on,txt_off,txt_invert = "ON","OFF","invert"
-
             menu = QMenu()
             menu.addAction(txt_on, all_on)
             menu.addAction(txt_off, all_off)
             menu.addAction(txt_invert, toggle)
-
             menu.exec(event.globalPos())
 
             return True

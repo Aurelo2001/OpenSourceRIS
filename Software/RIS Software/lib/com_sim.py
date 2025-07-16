@@ -1,5 +1,3 @@
-# !!! ris_simulator_serial.py
-
 import re
 import threading
 from queue import Queue
@@ -11,7 +9,7 @@ class RISSimulatorSerial:
         self._closed = False
         self.pattern = 0x0000000000000000000000000000000000000000000000000000000000000000
         self.vext = 5.00
-        self.serialno = " 42"  # fixed 3 chars with leading space
+        self.serialno = " 42"
         self.bt_key = None
         self.lock = threading.RLock()
         self._booted = True

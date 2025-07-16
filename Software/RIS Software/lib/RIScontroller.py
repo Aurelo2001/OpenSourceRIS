@@ -1,14 +1,9 @@
-# This Python file uses the following encoding: utf-8
 import sys
 
 from PySide6.QtWidgets import QApplication, QWidget
 from PySide6.QtCore import QObject, QEvent
 
 import time
-
-# Important:
-# You need to run the following command to generate the ui_form.py file
-#     pyside6-uic form.ui -o ui_form.py
 
 from RIScontroller_ui import RIScontroller_ui
 from RISinterface import RISinterface
@@ -20,8 +15,8 @@ class RIScontroller(QWidget):
         self.ui.setupUi(self)
 
         self.interface = RISinterface()
-        self.debugoutput = bool(self.ui.CB_Debug.checkState())                      # overwrites default to sync
-        self.interface.setPort(self.ui.CB_port.currentText())                         # overwrites default to sync
+        self.debugoutput = bool(self.ui.CB_Debug.checkState())      # overwrites default to sync
+        self.interface.setPort(self.ui.CB_port.currentText())       # overwrites default to sync
 
         self.ui.PB_connect.clicked.connect(self.wrap_connect)
         self.ui.PB_disconnect.clicked.connect(self.wrap_disconnect)
