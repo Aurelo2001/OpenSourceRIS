@@ -1,4 +1,4 @@
-from com_sim import RISSimulatorSerial
+from lib.com_sim import RISSimulatorSerial
 import serial
 import serial.tools.list_ports
 

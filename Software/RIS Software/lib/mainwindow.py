@@ -7,8 +7,8 @@ try:    # import if main.py is executed
     from .Toggletable import ToggleTable
     from .RIScontroller import RIScontroller
 except ImportError:     # import if mainwindow.py is executed
-    from Toggletable import ToggleTable
-    from RIScontroller import RIScontroller
+    from lib.Toggletable import ToggleTable
+    from lib.RIScontroller import RIScontroller
 
 
 class MainWindow(QMainWindow):

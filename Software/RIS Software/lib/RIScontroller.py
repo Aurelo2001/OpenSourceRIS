@@ -1,12 +1,11 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QWidget
-from PySide6.QtCore import QObject, QEvent
 
 import time
 
-from RIScontroller_ui import RIScontroller_ui
-from RISinterface import RISinterface
+from lib.RIScontroller_ui import RIScontroller_ui
+from lib.RISinterface import RISinterface
 
 class RIScontroller(QWidget):
     def __init__(self, parent=None):
