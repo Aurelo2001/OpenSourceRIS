@@ -6,9 +6,11 @@ from PySide6.QtWidgets import QMainWindow, QDockWidget, QApplication, QLabel, QV
 try:    # import if main.py is executed
     from .Toggletable import ToggleTable
     from .RIScontroller import RIScontroller
+    from .rissimulator_ui import RISsimulator_ui
 except ImportError:     # import if mainwindow.py is executed
     from lib.Toggletable import ToggleTable
     from lib.RIScontroller import RIScontroller
+    from lib.rissimulator_ui import RISsimulator_ui
 
 
 class MainWindow(QMainWindow):
@@ -34,8 +36,8 @@ class MainWindow(QMainWindow):
 
         # initialise Widgets for the QDockWidgets
         self.ris_controller = RIScontroller()
-        self.toggletable = ToggleTable(16,16,self.ris_controller.interface.set_pattern)
-        # TODO self.ris_siumulator = RISsimulator()
+        self.toggletable = ToggleTable(16,16,self.set_RISmask)
+        self.ris_siumulator_ui = RISsimulator_ui()
 
         # configure table dock
         self.dock_toggletable.setWidget(self.toggletable)
@@ -46,7 +48,7 @@ class MainWindow(QMainWindow):
         self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_ris_com)
         
         # configure simulation dock
-        self.dock_ris_sim.setWidget(QLabel("not jet implemented",alignment=QtCore.Qt.AlignCenter))  # TODO: replace QLable witch self.ris_siumulator
+        self.dock_ris_sim.setWidget(self.ris_siumulator_ui)
         self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_ris_sim)
 
         # stack all docks in MainWindow
@@ -77,7 +79,9 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.statbar)
         self.toggletable.setStatusBarObject(self.statbar)
 
-
+    def set_RISmask(self, mask):
+        self.ris_controller.interface.set_pattern(mask)
+        self.ris_siumulator_ui.set_mask_bool(mask)
 
 
 if __name__ == '__main__':
