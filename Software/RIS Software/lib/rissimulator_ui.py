@@ -170,7 +170,6 @@ class RISsimulator_ui(QMainWindow):
 ###################################################################################################
     def plot_beampattern_surface(self):
         # TODO: nur beamplot und eventuell vector löschen
-        start = datetime.now()
         try:
             self.view.removeItem(self.mesh)
         except:
@@ -190,7 +189,6 @@ class RISsimulator_ui(QMainWindow):
             drawEdges=False
         )
         self.view.addItem(self.mesh)
-        print("total time: {:.3f}ms".format((datetime.now()-start).total_seconds()*1000))
 
 
 #### adds mesh like planes to the plot ############################################################

@@ -185,7 +185,7 @@ class RISsimulator():
         im = ne.evaluate("sin(phase)")
         af = np.ascontiguousarray(re + 1j * im).astype(np.complex64)
         self.AF = np.abs(np.einsum('ijkl->kl', af))
-        print("calculation time: {:.3f}ms".format((datetime.now()-start).total_seconds()*1000))
+        print("AF calculation time: {:.3f}ms".format((datetime.now()-start).total_seconds()*1000))
 
         return self.AF
 
