@@ -15,7 +15,11 @@ class RIScontroller(QWidget):
 
         self.interface = RISinterface()
         self.debugoutput = bool(self.ui.CB_Debug.checkState())      # overwrites default to sync
-        self.interface.setPort(self.ui.CB_port.currentText())       # overwrites default to sync
+
+        self.wrap_updatePorts()
+        self.ui.CB_port.setCurrentIndex(0)
+
+        self.interface.set_Port(self.ui.CB_port.currentText())       # overwrites default to sync
 
         self.ui.PB_connect.clicked.connect(self.wrap_connect)
         self.ui.PB_disconnect.clicked.connect(self.wrap_disconnect)
@@ -35,6 +39,7 @@ class RIScontroller(QWidget):
         result, text = self.interface.connect()
 
         self.ui.PB_connect.setEnabled(not result)
+        self.ui.CB_port.setEnabled(not result)
         self.ui.PB_disconnect.setEnabled(result)
 
         self.ui.PB_reset.setEnabled(result)
@@ -52,6 +57,7 @@ class RIScontroller(QWidget):
         result, text = self.interface.disconnect()
 
         self.ui.PB_connect.setEnabled(result)
+        self.ui.CB_port.setEnabled(result)
         self.ui.PB_disconnect.setEnabled(not result)
 
         self.ui.PB_reset.setEnabled(not result)
@@ -66,20 +72,23 @@ class RIScontroller(QWidget):
 
 
     def wrap_readPattern(self):
-        result, text = self.interface.get_pattern()
+        result, text = self.interface.read_pattern()
 
         if result:      # TODO: hex to matrix for printing
             text = text
-
-        if self.debugoutput:
-            msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + text
+            pattern = self.mask_print_bool(text)
+            msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] currently set pattern:\n          " + pattern.replace("\n","\n          ")
             self.ui.TE_Debug.append(msg)
+
+        # if self.debugoutput:
+        #     msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + text
+        #     self.ui.TE_Debug.append(msg)
 
         return True
 
 
     def wrap_readSerial(self):
-        result, text = self.interface.get_serialnumber()
+        result, text = self.interface.read_serialnumber()
         if self.debugoutput:
             msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + text
             self.ui.TE_Debug.append(msg)
@@ -87,7 +96,7 @@ class RIScontroller(QWidget):
 
 
     def wrap_readVoltage(self):
-        result, text = self.interface.get_extVoltage()
+        result, text = self.interface.read_extVoltage()
         if self.debugoutput:
             msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + text
             self.ui.TE_Debug.append(msg)
@@ -104,7 +113,7 @@ class RIScontroller(QWidget):
 
 
     def wrap_setPort(self, index):
-        result, text = self.interface.setPort(self.ui.CB_port.itemText(index))
+        result, text = self.interface.set_Port(self.ui.CB_port.itemText(index))
         if self.debugoutput:
             msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + text
             self.ui.TE_Debug.append(msg)
@@ -112,7 +121,7 @@ class RIScontroller(QWidget):
 
 
     def wrap_updatePorts(self):
-        result, ports = self.interface.get_available_ports()
+        result, ports = self.interface.get_RIS_devices()
         if self.debugoutput:
             msg = "[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + "update COM ports"
             self.ui.TE_Debug.append(msg)
@@ -122,9 +131,10 @@ class RIScontroller(QWidget):
             self.ui.CB_port.clear()
             for port, desc, hwid in sorted(ports):
                 self.ui.CB_port.addItem(port)
-                print("{}: {} [{}]".format(port, desc, hwid))
+                # print("{}: {} [{}]".format(port, desc, hwid))
             self.ui.CB_port.addItem("DEMO")
             self.ui.CB_port.blockSignals(False)
+            self.ui.CB_port.setCurrentIndex(0)
 
         return result
 
@@ -135,6 +145,27 @@ class RIScontroller(QWidget):
         self.debugoutput = val
         return val
 
+
+    def mask_print_bool(self, pattern):
+        """
+        Gibt das aktuelle Aktivitätsmuster des RIS als Textgrafik aus.
+        ░░░ = inaktiv, ███ = aktiv
+        """
+        # Schritt 1: Hex-String in Binär-String konvertieren (256 Bits, also 64 * 4)
+        binary_string = bin(int(pattern, 16))[2:].zfill(256)
+
+        # Schritt 2: In eine 16x16 Liste umwandeln
+        bit_matrix = [
+            [int(bit) for bit in binary_string[i * 16:(i + 1) * 16]]
+            for i in range(16)
+        ]
+        # for row in self.element_mask:
+        line = ""
+        for row in bit_matrix:
+            for active in row:
+                line += "███ " if active else "░░░ "
+            line += "\n"
+        return line
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

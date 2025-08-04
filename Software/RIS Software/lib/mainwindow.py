@@ -2,15 +2,10 @@ import sys
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QDockWidget, QApplication, QLabel, QVBoxLayout, QWidget
 
-
-try:    # import if main.py is executed
-    from .Toggletable import ToggleTable
-    from .RIScontroller import RIScontroller
-    from .rissimulator_ui import RISsimulator_ui
-except ImportError:     # import if mainwindow.py is executed
-    from lib.Toggletable import ToggleTable
-    from lib.RIScontroller import RIScontroller
-    from lib.rissimulator_ui import RISsimulator_ui
+sys.path.append("./lib")
+from Toggletable import ToggleTable
+from RIScontroller import RIScontroller
+from rissimulator_ui import RISsimulator_ui
 
 
 class MainWindow(QMainWindow):
@@ -86,7 +81,7 @@ class MainWindow(QMainWindow):
         self.toggletable.setStatusBarObject(self.statbar)
 
     def set_RISmask(self, mask):
-        self.ris_controller.interface.set_pattern(mask)
+        self.ris_controller.interface.write_pattern(mask)
         self.ris_siumulator_ui.set_mask_bool(mask)
 
     # TODO: dockwidget einfügen per funktion -> mehr übersicht -> weniger code doppelt

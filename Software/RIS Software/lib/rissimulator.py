@@ -1,6 +1,8 @@
 import numpy as np
 from datetime import datetime
 
+import matplotlib.pyplot as plt
+
 import numexpr as ne
 
 c = 3e8
@@ -192,6 +194,14 @@ class RISsimulator():
 
 ###################################################################################################
     def get_af(self):
+        plt.figure(figsize=(8, 6))
+        plt.imshow(10 * np.log10(self.AF), extent=[-90, 90, -90, 90], origin='lower', cmap='viridis')
+        plt.title('Normalized Power Beampattern (16x16 RIS mit ON/OFF-Matrix)')
+        plt.xlabel('Azimuth φ (deg)')
+        plt.ylabel('Elevation θ (deg)')
+        plt.colorbar(label='Power (dB)')
+        plt.tight_layout()
+        plt.show()
         return self.AF
 
 
