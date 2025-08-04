@@ -1,5 +1,5 @@
 import sys
-from PySide6 import QtCore
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QDockWidget, QApplication, QLabel, QVBoxLayout, QWidget
 
 
@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
 
         # initialize QMainWindow
         self.centre = QMainWindow(self)
-        self.centre.setWindowFlags(QtCore.Qt.Widget)
+        self.centre.setWindowFlags(Qt.Widget)
 
         # configure options of QMainWindow's Docks
         self.centre.setDockOptions(
@@ -41,15 +41,21 @@ class MainWindow(QMainWindow):
 
         # configure table dock
         self.dock_toggletable.setWidget(self.toggletable)
-        self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_toggletable)
+        self.dock_toggletable.setFloating(False)
+        self.dock_toggletable.topLevelChanged.connect(self.on_top_level_changed)
+        self.centre.addDockWidget(Qt.LeftDockWidgetArea, self.dock_toggletable)
 
         # configure communication dock
         self.dock_ris_com.setWidget(self.ris_controller)
-        self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_ris_com)
+        self.dock_ris_com.setFloating(False)
+        self.dock_ris_com.topLevelChanged.connect(self.on_top_level_changed)
+        self.centre.addDockWidget(Qt.LeftDockWidgetArea, self.dock_ris_com)
         
         # configure simulation dock
         self.dock_ris_sim.setWidget(self.ris_siumulator_ui)
-        self.centre.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_ris_sim)
+        self.dock_ris_sim.setFloating(False)
+        self.dock_ris_sim.topLevelChanged.connect(self.on_top_level_changed)
+        self.centre.addDockWidget(Qt.LeftDockWidgetArea, self.dock_ris_sim)
 
         # stack all docks in MainWindow
         self.centre.tabifyDockWidget(self.dock_toggletable, self.dock_ris_com)
@@ -82,6 +88,30 @@ class MainWindow(QMainWindow):
     def set_RISmask(self, mask):
         self.ris_controller.interface.set_pattern(mask)
         self.ris_siumulator_ui.set_mask_bool(mask)
+
+    # TODO: dockwidget einfügen per funktion -> mehr übersicht -> weniger code doppelt
+    # def add_dock(self, main_widget, dock_content, name):
+    #     dock = QDockWidget(name, main_widget)
+    #     dock.setWidget(dock_content)
+    #     dock.setFloating(False)
+    #     dock.topLevelChanged.connect()
+    #     main_widget.addDockWidget(Qt.LeftDockWidgetArea, dock)
+
+
+
+    def on_top_level_changed(self, floating):
+        """Wenn das Dock-Fenster abgedockt wird (floating=True), Fenster-Buttons aktivieren"""
+        dock = self.sender()
+        if floating:
+            # Fenster-Flags setzen: mit Min/Max/Schließen-Buttons
+            dock.setWindowFlags(Qt.CustomizeWindowHint |
+                                Qt.Window |
+                                Qt.WindowMinimizeButtonHint |
+                                Qt.WindowMaximizeButtonHint |
+                                Qt.WindowCloseButtonHint)
+            dock.show()  # Notwendig nach setWindowFlags()
+
+
 
 
 if __name__ == '__main__':
