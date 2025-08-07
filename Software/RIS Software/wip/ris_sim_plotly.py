@@ -113,17 +113,17 @@ class RISSimulator:
         max_val = np.max(np.abs([X, Y, Z]))
         max_val = max(1.1 * max_val, 0.7)
         if ris_plane == "xy":
-            xaxis=dict(range=[-max_val, max_val])
-            yaxis=dict(range=[-max_val, max_val])
+            xaxis=dict(range=[-max_val/2, max_val/2])
+            yaxis=dict(range=[-max_val/2, max_val/2])
             zaxis=dict(range=[0, max_val])
         elif ris_plane == "zx":
-            xaxis=dict(range=[-max_val, max_val])
+            xaxis=dict(range=[-max_val/2, max_val/2])
             yaxis=dict(range=[0, max_val])
-            zaxis=dict(range=[-max_val, max_val])
+            zaxis=dict(range=[-max_val/2, max_val/2])
         elif ris_plane == "yz":
             xaxis=dict(range=[0, max_val])
-            yaxis=dict(range=[-max_val, max_val])
-            zaxis=dict(range=[-max_val, max_val])
+            yaxis=dict(range=[-max_val/2, max_val/2])
+            zaxis=dict(range=[-max_val/2, max_val/2])
         else:
             raise ValueError("Unknown ris_plane!")
         return xaxis, yaxis, zaxis
@@ -291,6 +291,7 @@ class RISWindow(QMainWindow):
         self.sim.load_phase_shift_table(phase_file)
         self.setWindowTitle("RIS Beampattern Visualisierung")
         self.setGeometry(200, 200, 1200, 800)
+        self.show_hover = False
 
         # Layout
         main_widget = QWidget()
@@ -310,6 +311,10 @@ class RISWindow(QMainWindow):
         self.chk_incident.setChecked(True)
         self.chk_incident.stateChanged.connect(self.on_incident_toggle)
         control_layout.addWidget(self.chk_incident)
+
+        self.chk_hover = QCheckBox("Hover Info anzeigen")
+        self.chk_hover.stateChanged.connect(self.on_hover_toggle)
+        control_layout.addWidget(self.chk_hover)
 
         self.freq_label = QLabel("Frequenz: 5.500 GHz")
         control_layout.addWidget(self.freq_label)
@@ -350,6 +355,10 @@ class RISWindow(QMainWindow):
         self.sim.show_incident_vector = bool(state)
         self.update_plot()
 
+    def on_hover_toggle(self, state):
+        self.show_hover = bool(state)
+        self.update_plot()
+
     def on_freq_changed(self, value):
         freq_ghz = value / 1000.0
         self.freq_label.setText(f"Frequenz: {freq_ghz:.3f} GHz")
@@ -357,7 +366,6 @@ class RISWindow(QMainWindow):
         self.update_plot()
 
     def update_plot(self):
-        # ----------- Plotly Figure wie gewohnt erzeugen ---------------
         fig_html, fig_dict = self._get_plotly_figure()
         # ---------- Sende nur das Update per JavaScript --------------
         js_code = (
@@ -369,7 +377,7 @@ class RISWindow(QMainWindow):
         QTimer.singleShot(100, try_run_js)
 
     def _get_plotly_figure(self):
-        # Deine gewohnte Plotly-Logik – Rückgabe: (HTML, fig.to_plotly_json())
+        # Rückgabe: (HTML, fig.to_plotly_json())
         theta = np.linspace(0, np.pi / 2, 80)
         phi = np.linspace(0, 2 * np.pi, 160)
         THETA, PHI = np.meshgrid(theta, phi)
@@ -377,24 +385,30 @@ class RISWindow(QMainWindow):
         AF_db = 20 * np.log10(AF_norm + 1e-12)
         X, Y, Z = self.sim._get_coords(AF_norm, THETA, PHI, self.sim.ris_plane)
 
-        plot_db = True
-        AF_plot = AF_norm if plot_db == False else AF_db
-        # np.savetxt("af_plot.csv", AF_plot, "%.3f") # TODO
+        # TODO: toggle für dB und normiert einfügen?
+        # plot_db = True
+        # AF_plot = AF_norm if plot_db == False else AF_db
 
-        data = [
-            go.Surface(
-                x=X.tolist(),
-                y=Y.tolist(),
-                z=Z.tolist(),
-                surfacecolor=AF_plot.tolist(),
-                colorscale="viridis", cmin=-40, cmax=0, opacity=1,
-                showscale=False,
-                # hoverinfo='skip',
-                hovertemplate=(
-                    "Normierter AF: %{surfacecolor:.2f}<extra></extra>"
-                ),
-            ),
-        ]
+        hovertemplate_surface = (
+            "Arrayfaktor: %{surfacecolor:.1f} dB<extra></extra>"
+            if self.show_hover else None
+        )
+
+        surface = go.Surface(
+            x=X.tolist(),
+            y=Y.tolist(),
+            z=Z.tolist(),
+            surfacecolor=AF_db.tolist(),
+            colorscale="viridis",
+            cmin=np.max([-40, np.nanmin(AF_db)]),
+            cmax=np.min([0, np.nanmax(AF_db)]),
+            opacity=0.85,
+            showscale=True,
+            hovertemplate=hovertemplate_surface,
+            hoverinfo="all" if self.show_hover else "skip"
+        )
+
+        data = [surface]
 
         # Incident-Vektor als Linie
         if self.sim.show_incident_vector:
@@ -420,7 +434,10 @@ class RISWindow(QMainWindow):
             incident_theta_deg = np.degrees(self.sim.incident_theta)
             incident_phi_deg = np.degrees(self.sim.incident_phi)
             angle_str = f"Incident θ: {incident_theta_deg:.1f}°, φ: {incident_phi_deg:.1f}°"
-            text=[angle_str, angle_str]
+            
+            hovertemplate_vector = (
+                "%{text}<extra></extra>" if self.show_hover else None
+            )
             data.append(
                 go.Scatter3d(
                     x=x_vec, y=y_vec, z=z_vec,
@@ -428,8 +445,10 @@ class RISWindow(QMainWindow):
                     line=dict(color='red', width=8),
                     marker=dict(size=4, color='red'),
                     name='Incident Angle',
-                    text=text,
-                    hovertemplate="%{text}<extra></extra>"
+                    text=[angle_str, angle_str],
+                    hovertemplate=hovertemplate_vector,
+                    hoverinfo="all" if self.show_hover else "skip",
+                    showlegend=False
                 )
             )
 
