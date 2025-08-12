@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 import numexpr as ne
 
+import plotly.io as pio
+import plotly.graph_objects as go
 c = 3e8
 
 ###################################################################################################
@@ -16,6 +18,9 @@ class RISsimulator():
         self.dx = 0.02001           # horizontal distance between centers of elements in mm 
 
         self.read_phase_file("AngS11.txt")
+
+        self.show_incident_vector = True
+        self.ris_plane = "xy"
 
         m = np.arange(self.M).reshape((-1, 1, 1, 1))  # M x 1 x 1 x 1
         n = np.arange(self.N).reshape((1, -1, 1, 1))  # 1 x N x 1 x 1
@@ -194,15 +199,132 @@ class RISsimulator():
 
 ###################################################################################################
     def get_af(self):
-        plt.figure(figsize=(8, 6))
-        plt.imshow(10 * np.log10(self.AF), extent=[-90, 90, -90, 90], origin='lower', cmap='viridis')
-        plt.title('Normalized Power Beampattern (16x16 RIS mit ON/OFF-Matrix)')
-        plt.xlabel('Azimuth φ (deg)')
-        plt.ylabel('Elevation θ (deg)')
-        plt.colorbar(label='Power (dB)')
-        plt.tight_layout()
-        plt.show()
+        # plt.figure(figsize=(8, 6))
+        # plt.imshow(10 * np.log10(self.AF), extent=[-90, 90, -90, 90], origin='lower', cmap='viridis')
+        # plt.title('Normalized Power Beampattern (16x16 RIS mit ON/OFF-Matrix)')
+        # plt.xlabel('Azimuth φ (deg)')
+        # plt.ylabel('Elevation θ (deg)')
+        # plt.colorbar(label='Power (dB)')
+        # plt.tight_layout()
+        # plt.show()
         return self.AF
+
+
+
+    def _get_coords(self, AF_norm, THETA, PHI, ris_plane="xy"):
+        # Flexible Achsenzuordnung für verschiedene Ebenen
+        if ris_plane == "xy":
+            X = AF_norm * np.sin(THETA) * np.cos(PHI)
+            Y = AF_norm * np.sin(THETA) * np.sin(PHI)
+            Z = AF_norm * np.cos(THETA)
+        elif ris_plane == "zx":
+            X = AF_norm * np.sin(THETA) * np.cos(PHI)
+            Z = AF_norm * np.sin(THETA) * np.sin(PHI)
+            Y = AF_norm * np.cos(THETA)
+        elif ris_plane == "yz":
+            Y = AF_norm * np.sin(THETA) * np.cos(PHI)
+            Z = AF_norm * np.sin(THETA) * np.sin(PHI)
+            X = AF_norm * np.cos(THETA)
+        else:
+            raise ValueError("Unknown ris_plane!")
+        return X, Y, Z
+
+    def _get_coord_limits(self, X, Y, Z, ris_plane="xy"):
+        # Flexible Achsenzuordnung für verschiedene Ebenen
+        max_val = np.max(np.abs([X, Y, Z]))
+        max_val = max(1.1 * max_val, 0.7)
+        if ris_plane == "xy":
+            xaxis=dict(range=[-max_val/2, max_val/2])
+            yaxis=dict(range=[-max_val/2, max_val/2])
+            zaxis=dict(range=[0, max_val])
+        elif ris_plane == "zx":
+            xaxis=dict(range=[-max_val/2, max_val/2])
+            yaxis=dict(range=[0, max_val])
+            zaxis=dict(range=[-max_val/2, max_val/2])
+        elif ris_plane == "yz":
+            xaxis=dict(range=[0, max_val])
+            yaxis=dict(range=[-max_val/2, max_val/2])
+            zaxis=dict(range=[-max_val/2, max_val/2])
+        else:
+            raise ValueError("Unknown ris_plane!")
+        return xaxis, yaxis, zaxis
+
+
+    def plot_beampattern(self, show_incident_vector=None, ris_plane=None):
+        if show_incident_vector is None:
+            show_incident_vector = self.show_incident_vector
+        if ris_plane is None:
+            ris_plane = self.ris_plane
+
+        AF_norm = self.get_af()
+        X, Y, Z = self._get_coords(AF_norm, self.theta, self.phi, ris_plane)
+
+        data = [
+            go.Surface(
+                x=X, y=Y, z=Z, surfacecolor=AF_norm,
+                colorscale="viridis", cmin=0, cmax=1, opacity=0.85,
+                showscale=False,
+            )
+        ]
+
+        # Incident Angle als Linienvektor einzeichnen (optional)
+        if show_incident_vector:
+            vec_len = 1.2
+            th = self.incident_theta
+            ph = self.incident_phi
+            # Vektor-Umrechnung je nach RIS-Ebene
+            if ris_plane == "xy":
+                x_vec = [0, vec_len * np.sin(th) * np.cos(ph)]
+                y_vec = [0, vec_len * np.sin(th) * np.sin(ph)]
+                z_vec = [0, vec_len * np.cos(th)]
+            elif ris_plane == "zx":
+                x_vec = [0, vec_len * np.sin(th) * np.cos(ph)]
+                z_vec = [0, vec_len * np.sin(th) * np.sin(ph)]
+                y_vec = [0, vec_len * np.cos(th)]
+            elif ris_plane == "yz":
+                y_vec = [0, vec_len * np.sin(th) * np.cos(ph)]
+                z_vec = [0, vec_len * np.sin(th) * np.sin(ph)]
+                x_vec = [0, vec_len * np.cos(th)]
+            else:
+                raise ValueError("Unknown ris_plane!")
+            data.append(
+                go.Scatter3d(
+                    x=x_vec, y=y_vec, z=z_vec,
+                    mode='lines+markers',
+                    line=dict(color='red', width=8),
+                    marker=dict(size=4, color='red'),
+                    name='Incident Angle',
+                )
+            )
+
+        # --- Dynamischer quadratischer Achsenbereich ---
+
+        xaxis, yaxis, zaxis = self._get_coord_limits(X, Y, Z, ris_plane)
+
+        fig = go.Figure(data=data)
+        fig.update_layout(
+            title=f"RIS 3D Beampattern (RIS-Ebene: {ris_plane.upper()})",
+            scene=dict(
+                xaxis_title="X",
+                yaxis_title="Y",
+                zaxis_title="Z",
+                aspectmode="manual",
+                aspectratio=dict(x=1, y=1, z=1),
+                xaxis=xaxis,
+                yaxis=yaxis,
+                zaxis=zaxis,
+            ),
+            margin=dict(l=0, r=0, b=0, t=40)
+        )
+
+        # Plotly-Konfiguration für immer sichtbare Bedienelemente
+        plotly_config = dict(
+            displayModeBar="always",
+            displaylogo=False,
+            responsive=True,
+        )
+
+        return pio.to_html(fig, full_html=False, include_plotlyjs='cdn', config=plotly_config)
 
 
 if __name__ == "__main__":

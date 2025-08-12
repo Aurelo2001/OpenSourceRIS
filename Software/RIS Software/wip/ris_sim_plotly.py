@@ -409,13 +409,13 @@ class RISWindow(QMainWindow):
         )
 
         data = [surface]
+        plane = self.sim.ris_plane
 
         # Incident-Vektor als Linie
         if self.sim.show_incident_vector:
             vec_len = 1.2
             th = self.sim.incident_theta
             ph = self.sim.incident_phi
-            plane = self.sim.ris_plane
             if plane == "xy":
                 x_vec = [0, vec_len * np.sin(th) * np.cos(ph)]
                 y_vec = [0, vec_len * np.sin(th) * np.sin(ph)]
