@@ -12,17 +12,17 @@ from collections import OrderedDict
 import json
 
 try:
-    from EhMatable import EhMatable
+    from EhMatable import EhMatable_E5810, EhMatable
     from RISinterface import RISinterface
 except:
-    from controller.EhMatable import EhMatable
+    from controller.EhMatable import EhMatable_E5810, EhMatable
     from controller.RISinterface import RISinterface
 
 from RsInstrument import RsInstrument
 
 # for testing and debugging
 DEBUG = True
-DEMO = True
+DEMO = False
 
 ###################################################################################################
 
@@ -102,21 +102,34 @@ class main_controller(QObject):
         self.start_measurement.emit()
         # prepare dir to save files
         run_dir = Path("./data") / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        if DEBUG:
+        if DEMO:
             import shutil
             run_dir = Path("./data") / "test"
             if run_dir.exists():
                 shutil.rmtree(run_dir)
         run_dir.mkdir(parents=True)
 
-        measurement.save(str(run_dir))
+        measurement.save(str(run_dir / "measurement_config.json"))
 
-        angle = np.linspace(0,181,10,dtype=int)
+        angle = np.arange(measurement.ang_start_deg,
+                          measurement.ang_stop_deg,
+                          measurement.ang_step_deg)
+        
+        pattern = self.data.unique_patterns()
+        
+        for p_idx, p in enumerate(pattern, start=1):
+            
+            pdir = run_dir / f"pattern_{p_idx:02d}"
+            pdir.mkdir(exist_ok=True)
+            np.savetxt(pdir / "pattern.csv",
+                       p.matrix,
+                       delimiter=",",
+                       fmt="%.0d")
         
         for ang in angle:
             self.table.setAngle(ang)
         
-            for p_idx, p in enumerate(self.data.unique_patterns(), start=1):
+            for p_idx, p in enumerate(pattern, start=1):
                 
                 self.RIS.write_pattern(p.matrix)
                 
@@ -124,7 +137,6 @@ class main_controller(QObject):
                 
                 # create path string and save
                 pdir = run_dir / f"pattern_{p_idx:02d}"
-                pdir.mkdir(exist_ok=True)
                 path = pdir / f"{ang:3.3f}deg.csv"
                 trace_data.save(str(path))
                 
@@ -224,15 +236,16 @@ class pattern_handle(QObject):
 
     #-------------------------------------------#
     def unique_patterns(self) -> list[RISpattern]:
-        return list(OrderedDict.fromkeys(self.pattern))
+        return self.pattern
+        return list(OrderedDict.fromkeys(self.pattern)) #TODO TypeError: unhashable type: 'RISpattern' | implement with loop
 
 #-------------------------------------------------------------------------------------------------#
 
 class MeasurementResult:
-    def __init__(self, freq_hz:np.ndarray, mag_dB:np.ndarray, points:int = None):
+    def __init__(self, freq_hz:np.ndarray, mag_dB:np.ndarray, points:int = 0):
         self.freq_hz = np.asarray(freq_hz).flatten()
         self.mag_db = np.asarray(mag_dB).flatten()
-        if points==None: points = len(freq_hz)
+        if points == 0: points = len(freq_hz)
         self.points = points
 
     @classmethod
@@ -279,7 +292,7 @@ class VNA(RsInstrument):
         freq_list = self.query_str('CALC:DATA:STIM?')  # Get frequency list for complete trace
         freq_array = np.array(list(map(float, freq_list.split(','))))  # Convert the received string into a tuple
 
-        return MeasurementResult(points_count, freq_array, trace_array)
+        return MeasurementResult(freq_array, trace_array, points_count)
 
 #-------------------------------------------------------------------------------------------------#
 #- DEMO classes ----------------------------------------------------------------------------------#
