@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QSizePolicy
 )
 
+DEBUG = True
 
 class RisConfigManager(QWidget):
     
@@ -45,6 +46,7 @@ class RisConfigManager(QWidget):
         self._c.data.pattern_added.connect(self._append_config)
         self._c.data.pattern_deleted.connect(self._update_patern_list)
         self._c.data.selected_pattern_edited.connect(self._selected_edited)
+        self._c.data.update_all_pattern.connect(self._update_patern_list)
         # self._c.data.selected_pattern_changed.connect(self._on_list_selection_changed)
         
         self._current_uid: Optional[str] = None
@@ -68,13 +70,15 @@ class RisConfigManager(QWidget):
         self.btn_add = QPushButton("Add")
         self.btn_dup = QPushButton("Duplicate")
         self.btn_del = QPushButton("Delete")
+        self.btn_list = QPushButton("all")
         
         self.btn_add.clicked.connect(lambda: self._c.data.add_empty())
         self.btn_dup.clicked.connect(lambda: self._c.data.duplicate_selected())
         self.btn_del.clicked.connect(lambda: self._c.data.delet_pattern(self._c.data.get_selected_uid()))
+        self.btn_list.clicked.connect(lambda: self._c.data.gen_all())
         
         btn_col = QVBoxLayout()
-        for b in (self.btn_add, self.btn_dup, self.btn_del):
+        for b in (self.btn_add, self.btn_dup, self.btn_del, self.btn_list):
             btn_col.addWidget(b)
         
         list_row = QHBoxLayout()
@@ -90,16 +94,23 @@ class RisConfigManager(QWidget):
     
     #-------------------------------------------#
     def _update_patern_list(self):
-        self.list.clear()
         self.list.blockSignals(True)
+        self.list.clear()
         for p in self._c.data.pattern:
             self._append_config(p)
+        for i in range(self.list.count()):
+            item: QListWidgetItem = self.list.item(i)
+            if item.data(Qt.UserRole) == self._c.data.akt_pattern_uid:
+                self.list.setCurrentItem(item)
+                self.list.scrollToItem(item)
+                break
         self.list.blockSignals(False)
     
     #-------------------------------------------#
     def _append_config(self, pattern: controller.RISpattern):
         item = QListWidgetItem()
         item.setData(Qt.UserRole, pattern.uid)
+        if DEBUG: item.setToolTip(pattern.uid)
         item.setIcon(self._pixmap_icon(pattern.matrix))
         self.list.addItem(item)
         

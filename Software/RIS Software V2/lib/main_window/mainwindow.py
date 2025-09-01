@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         self.central.addDockWidget(Qt.LeftDockWidgetArea, self.dock_measure)
 
         self.central.tabifyDockWidget(self.dock_table, self.dock_measure)
-        self.dock_table.raise_()
+        self.dock_measure.raise_()
 
         self.menuBar().addMenu("File").addAction("Quit", self.close)
 

@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from collections import OrderedDict
 import json
+from time import sleep
+import itertools
 
 try:
     from EhMatable import EhMatable_E5810, EhMatable
@@ -78,6 +80,8 @@ class main_controller(QObject):
     start_measurement = Signal()
     stop_measurement = Signal()
 
+    measurement_msg = Signal(str)
+
     def __init__(self):
         super().__init__()
         self.data = pattern_handle(self)
@@ -100,9 +104,11 @@ class main_controller(QObject):
     @Slot(list)
     def measure(self, measurement:Measurement_config):
         self.start_measurement.emit()
+        self.measurement_msg.emit("Measurement started")
         # prepare dir to save files
         run_dir = Path("./data") / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         if DEMO:
+            self.measurement_msg.emit("Measurement running in DEMO-mode!")
             import shutil
             run_dir = Path("./data") / "test"
             if run_dir.exists():
@@ -111,9 +117,11 @@ class main_controller(QObject):
 
         measurement.save(str(run_dir / "measurement_config.json"))
 
-        angle = np.arange(measurement.ang_start_deg,
-                          measurement.ang_stop_deg,
-                          measurement.ang_step_deg)
+        # angle = np.arange(measurement.ang_start_deg,
+        #                   measurement.ang_stop_deg,
+        #                   measurement.ang_step_deg)
+        
+        angle = [90]
         
         pattern = self.data.unique_patterns()
         
@@ -129,18 +137,17 @@ class main_controller(QObject):
         for ang in angle:
             self.table.setAngle(ang)
         
+            self.measurement_msg.emit("Measurement of angle {ang:.3f} Started")
             for p_idx, p in enumerate(pattern, start=1):
-                
                 self.RIS.write_pattern(p.matrix)
-                
+                sleep(1)
                 trace_data = self.VNA.read_trace()
                 
                 # create path string and save
                 pdir = run_dir / f"pattern_{p_idx:02d}"
                 path = pdir / f"{ang:3.3f}deg.csv"
                 trace_data.save(str(path))
-                
-                # raise NotImplementedError("test")
+                self.measurement_msg.emit("Measurement of pattern_{p_idx:02d} complet")
         self.stop_measurement.emit()
 
 #-------------------------------------------------------------------------------------------------#
@@ -151,6 +158,7 @@ class pattern_handle(QObject):
     pattern_added = Signal(RISpattern)
     selected_pattern_changed = Signal(RISpattern)
     selected_pattern_edited = Signal(RISpattern)
+    update_all_pattern = Signal()
     
     def __init__(self, parent:main_controller):
         super().__init__(parent=parent)
@@ -199,8 +207,9 @@ class pattern_handle(QObject):
         for p_idx, p in enumerate(self.pattern):
             if p.uid == uid:
                 self.pattern.remove(p)
-                if p_idx == 0:      # prevent list from getting empty
+                if len(self.pattern) == 0:      # prevent list from getting empty
                     self.add_empty()
+                    self.set_selected_pattern(self.pattern[0].uid)
                 else:
                     self.set_selected_pattern(self.pattern[p_idx-1].uid)
                 self.pattern_deleted.emit(p)
@@ -235,9 +244,27 @@ class pattern_handle(QObject):
         return next((p for p in self.pattern if p.uid == uid), None)
 
     #-------------------------------------------#
-    def unique_patterns(self) -> list[RISpattern]:
-        return self.pattern
-        return list(OrderedDict.fromkeys(self.pattern)) #TODO TypeError: unhashable type: 'RISpattern' | implement with loop
+    def unique_patterns(self):
+        seen = set()
+        out = []
+        for p in self.pattern:
+            key = np.packbits(p.matrix.reshape(-1).astype(np.uint8)).tobytes()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(p)
+        return out
+    
+    def gen_all(self):
+        group_size = 2
+        self.pattern = []
+        groups = self.ris_col_count // group_size
+        self.pattern = []
+        for bits in itertools.product([0, 1], repeat=groups):
+            expanded = [b for b in bits for _ in range(group_size)]
+            mat = np.tile(expanded, (self.ris_row_count, 1))
+            self.pattern.append(RISpattern(matrix=mat))
+        self.update_all_pattern.emit()
 
 #-------------------------------------------------------------------------------------------------#
 
@@ -251,7 +278,12 @@ class MeasurementResult:
     @classmethod
     def from_file(cls, fname):
         data = np.loadtxt(fname, delimiter=",", skiprows=1)
-        freq_hz, mag_db = data[:, 0], data[:, 1]
+        if data.ndim == 1:
+            freq_hz = np.array([data[0]])
+            mag_db = np.array([data[1]])
+        else:
+            freq_hz = data[:, 0]
+            mag_db = data[:, 1]
         return cls(freq_hz, mag_db)
 
     def save(self, fname: str):
@@ -275,7 +307,7 @@ class VNA(RsInstrument):
         super().__init__(resource_name, True, False, "SelectVisa='rs'")
         self.write_str("SYST:DISP:UPD ON")
         # load preset
-        self.write_str("SYST:PRES:USER:NAME \'C:\\Users\\Public\\Documents\\Rohde-Schwarz\\Vna\\RecallSets\\RIS_Projekt_FK.znx\'")
+        self.write_str("SYST:PRES:USER:NAME \'C:\\Users\\Public\\Documents\\Rohde-Schwarz\\Vna\\RecallSets\\RIS_Projekt_FK_2.znx\'")
         self.write_str("SYST:PRES:USER ON")
         self.write_str("SYST:PRES:REM ON")
         self.write_str("*RST")

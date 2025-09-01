@@ -26,6 +26,9 @@ class MeasurementWindow(QMainWindow):
         
         self._c = controller
         
+        self._c.stop_measurement.connect(QApplication.beep)
+        self._c.measurement_msg.connect(lambda text: w.statusBar().showMessage(text, 3000))
+        
         self.setWindowTitle("Measurement settings")
         self.resize(953, 600)
 
