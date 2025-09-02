@@ -24,7 +24,7 @@ from RsInstrument import RsInstrument
 
 # for testing and debugging
 DEBUG = True
-DEMO = False
+DEMO = True
 
 ###################################################################################################
 
