@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 os.environ["QT_API"] = "pyside6"
 
@@ -50,20 +51,78 @@ class RISpattern:
                         .replace("]", "")
         return f"RisConfiguration (uid={self.uid})\n{matrix_str}"
 
+
 @dataclass
 class Measurement_config:
-    freq_start_hz: float
-    freq_stop_hz: float
-    if_bandwidth_hz: float
-    points: int
-    ang_start_deg:float
-    ang_stop_deg:float
-    ang_step_deg:float
-    power_dbm: float
-    sweep_type: str = "LIN"
-    averages: int = 5
+    # freqency
+    freq_hz: List[float]               = field(default_factory=list, init=False)
+    freq_start_hz: Optional[float]     = field(default=None, init=False)
+    freq_stop_hz: Optional[float]      = field(default=None, init=False)
+    if_bw_hz: Optional[float]          = field(default=None, init=False)
+    points: Optional[int]              = field(default=None, init=False)
 
-    def save(self, fname: str):
+    # rotation
+    rot_deg: List[int]                 = field(default_factory=list, init=False)
+    rot_start_deg: Optional[int]       = field(default=None, init=False)
+    rot_stop_deg: Optional[int]        = field(default=None, init=False)
+    rot_step_deg: Optional[int]        = field(default=None, init=False)
+
+    # vna
+    power_dbm: Optional[float]         = field(default=None, init=False)
+    port_tx: Optional[int]             = field(default=None, init=False)
+    port_rx: Optional[int]             = field(default=None, init=False)
+
+    # optional
+    sweep_type: str                    = field(default="LIN", init=False)
+    averages: int                      = field(default=3, init=False)
+
+    def __init__(self, /, **kwargs):
+        if "freq_hz" in kwargs:
+            freq = kwargs["freq_hz"]
+            if isinstance(freq, (list, tuple)):
+                self.freq_hz = [float(x) for x in freq]
+            else:
+                self.freq_hz = [float(freq)]
+        elif all(k in kwargs for k in ("freq_start_hz", "freq_stop_hz", "if_bw_hz", "points")):
+            self.freq_start_hz = float(kwargs["freq_start_hz"])
+            self.freq_stop_hz  = float(kwargs["freq_stop_hz"])
+            self.if_bw_hz      = float(kwargs["if_bw_hz"])
+            self.points        = int(kwargs["points"])
+            self.freq_hz       = list(np.linspace(self.freq_start_hz, self.freq_stop_hz, self.points))
+            if len(self.freq_hz) != self.points:
+                raise ValueError("Number of calculated frequencies does not match 'points'.")
+        else:
+            raise ValueError("Missing 'freq_hz' or ['freq_start_hz','freq_stop_hz','if_bw_hz','points'].")
+
+        if "rot_deg" in kwargs:
+            rot = kwargs["rot_deg"]
+            if isinstance(rot, (list, tuple)):
+                self.rot_deg = [int(x) for x in rot]
+            else:
+                self.rot_deg = [int(rot)]
+        elif all(k in kwargs for k in ("rot_start_deg", "rot_stop_deg", "rot_step_deg")):
+            self.rot_start_deg = int(kwargs["rot_start_deg"])
+            self.rot_stop_deg  = int(kwargs["rot_stop_deg"])
+            self.rot_step_deg  = int(kwargs["rot_step_deg"])
+            self.rot_deg = list(range(self.rot_start_deg, self.rot_stop_deg + self.rot_step_deg, self.rot_step_deg))
+        else:
+            raise ValueError("Missing 'rot_deg' or ['rot_start_deg','rot_stop_deg','rot_step_deg'].")
+
+        if "power_dbm" in kwargs:   self.power_dbm = float(kwargs["power_dbm"])
+        else:                       raise ValueError("Missing 'power_dbm'.")
+
+        if "port_tx" in kwargs:     self.port_tx = int(kwargs["port_tx"])
+        else:                       raise ValueError("Missing 'port_tx'.")
+
+        if "port_rx" in kwargs:     self.port_rx = int(kwargs["port_rx"])
+        else:                       raise ValueError("Missing 'port_rx'.")
+        
+        if "sweep_type" in kwargs:  self.sweep_type = str(kwargs["sweep_type"])
+        
+        if "averages" in kwargs:    self.averages = int(kwargs["averages"])
+
+    # --- Persistenz ---
+    def save(self, fname: str) -> None:
         with open(fname, "w", encoding="utf-8") as f:
             json.dump(asdict(self), f, indent=4)
 
@@ -104,6 +163,7 @@ class main_controller(QObject):
     @Slot(list)
     def measure(self, measurement:Measurement_config):
         self.start_measurement.emit()
+        start_T = datetime.now()
         self.measurement_msg.emit("Measurement started")
         # prepare dir to save files
         run_dir = Path("./data") / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -116,12 +176,6 @@ class main_controller(QObject):
         run_dir.mkdir(parents=True)
 
         measurement.save(str(run_dir / "measurement_config.json"))
-
-        # angle = np.arange(measurement.ang_start_deg,
-        #                   measurement.ang_stop_deg,
-        #                   measurement.ang_step_deg)
-        
-        angle = [90]
         
         pattern = self.data.unique_patterns()
         
@@ -134,11 +188,12 @@ class main_controller(QObject):
                        delimiter=",",
                        fmt="%.0d")
         
-        for ang in angle:
+        for ang in measurement.rot_deg:
             self.table.setAngle(ang)
         
             self.measurement_msg.emit("Measurement of angle {ang:.3f} Started")
             for p_idx, p in enumerate(pattern, start=1):
+                if DEBUG: print(f"measuring: pattern_{p_idx:02d}")
                 self.RIS.write_pattern(p.matrix)
                 sleep(1)
                 trace_data = self.VNA.read_trace()
@@ -148,6 +203,8 @@ class main_controller(QObject):
                 path = pdir / f"{ang:3.3f}deg.csv"
                 trace_data.save(str(path))
                 self.measurement_msg.emit("Measurement of pattern_{p_idx:02d} complet")
+        time_passed = datetime.now() - start_T
+        print(f"measurement took {time_passed.total_seconds()}")
         self.stop_measurement.emit()
 
 #-------------------------------------------------------------------------------------------------#
